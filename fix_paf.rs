@@ -9,16 +9,15 @@ fn main() -> std::io::Result<()> {
 
     for line in reader.lines() {
         let line = line?;
-        let mut fields: Vec<&str> = line.split('\t').collect();
+        let mut fields: Vec<String> = line.split('\t').map(String::from).collect();
         
         if fields.len() >= 12 {
             let query_start: usize = fields[2].parse().unwrap_or(0);
-            let query_end: usize = fields[3].parse().unwrap_or(0);
-            let cigar = fields.last().unwrap_or(&"");
+            let cigar = fields.last().unwrap_or(&String::new());
             
             if cigar.starts_with("cg:Z:") {
                 let correct_query_end = calculate_query_end(query_start, &cigar[5..]);
-                fields[3] = &correct_query_end.to_string();
+                fields[3] = correct_query_end.to_string();
             }
         }
         

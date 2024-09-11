@@ -4,3 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+[package]
+name = "fix_paf"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
