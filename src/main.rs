@@ -23,7 +23,7 @@ fn main() -> io::Result<()> {
     for (line_number, line) in input.lines().enumerate() {
         match line {
             Ok(line) => {
-                let mut fields: Vec<&str> = line.split('\t').collect();
+                let mut fields: Vec<String> = line.split('\t').map(String::from).collect();
                 
                 if fields.len() >= 12 {
                     let (query_fixed, target_fixed) = fix_endpoints(&mut fields);
@@ -51,35 +51,29 @@ fn main() -> io::Result<()> {
     Ok(())
 }
 
-fn fix_endpoints(fields: &mut Vec<&str>) -> (bool, bool) {
+fn fix_endpoints(fields: &mut Vec<String>) -> (bool, bool) {
     let mut query_fixed = false;
     let mut target_fixed = false;
 
-    // Fix query endpoints
-    if let (Ok(query_start), Ok(query_end), Some(cigar)) = (
+    if let (Ok(query_start), Ok(query_end), Ok(target_start), Ok(target_end), Some(cigar)) = (
         fields[2].parse::<usize>(),
         fields[3].parse::<usize>(),
-        fields.last()
-    ) {
-        if cigar.starts_with("cg:Z:") {
-            let correct_query_end = calculate_query_end(query_start, &cigar[5..]);
-            if correct_query_end != query_end {
-                fields[3] = correct_query_end.to_string().as_str();
-                query_fixed = true;
-            }
-        }
-    }
-
-    // Fix target endpoints
-    if let (Ok(target_start), Ok(target_end), Some(cigar)) = (
         fields[7].parse::<usize>(),
         fields[8].parse::<usize>(),
         fields.last()
     ) {
         if cigar.starts_with("cg:Z:") {
-            let correct_target_end = calculate_target_end(target_start, &cigar[5..]);
+            let (query_length, target_length) = calculate_lengths(&cigar[5..]);
+            
+            let correct_query_end = query_start + query_length;
+            if correct_query_end != query_end {
+                fields[3] = correct_query_end.to_string();
+                query_fixed = true;
+            }
+
+            let correct_target_end = target_start + target_length;
             if correct_target_end != target_end {
-                fields[8] = correct_target_end.to_string().as_str();
+                fields[8] = correct_target_end.to_string();
                 target_fixed = true;
             }
         }
@@ -88,29 +82,8 @@ fn fix_endpoints(fields: &mut Vec<&str>) -> (bool, bool) {
     (query_fixed, target_fixed)
 }
 
-fn calculate_query_end(start: usize, cigar: &str) -> usize {
+fn calculate_lengths(cigar: &str) -> (usize, usize) {
     let mut query_length = 0;
-    let mut num_buffer = String::new();
-
-    for ch in cigar.chars() {
-        if ch.is_digit(10) {
-            num_buffer.push(ch);
-        } else {
-            let num: usize = num_buffer.parse().unwrap_or(0);
-            num_buffer.clear();
-
-            match ch {
-                'M' | '=' | 'X' | 'I' | 'S' | 'H' => query_length += num,
-                'D' | 'N' => {}
-                _ => {}
-            }
-        }
-    }
-
-    start + query_length
-}
-
-fn calculate_target_end(start: usize, cigar: &str) -> usize {
     let mut target_length = 0;
     let mut num_buffer = String::new();
 
@@ -122,12 +95,16 @@ fn calculate_target_end(start: usize, cigar: &str) -> usize {
             num_buffer.clear();
 
             match ch {
-                'M' | '=' | 'X' | 'D' | 'N' => target_length += num,
-                'I' | 'S' | 'H' => {}
+                'M' | '=' | 'X' => {
+                    query_length += num;
+                    target_length += num;
+                }
+                'I' | 'S' | 'H' => query_length += num,
+                'D' | 'N' => target_length += num,
                 _ => {}
             }
         }
     }
 
-    start + target_length
+    (query_length, target_length)
 }
