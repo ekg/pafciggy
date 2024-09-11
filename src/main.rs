@@ -10,7 +10,7 @@ mod tests {
         let mut input_fields: Vec<String> = input.split('\t').map(String::from).collect();
         let expected_fields: Vec<String> = expected.split('\t').map(String::from).collect();
         
-        let (query_fixed, target_fixed) = fix_endpoints(&mut input_fields);
+        let (query_fixed, target_fixed, _, _) = fix_endpoints(&mut input_fields);
         
         assert_eq!(input_fields, expected_fields, "Fields do not match after fixing");
         assert!(query_fixed || target_fixed, "No fixes were applied");
