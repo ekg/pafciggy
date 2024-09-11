@@ -2,6 +2,43 @@ use std::env;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader, Write};
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test_fix_endpoints(input: &str, expected: &str) {
+        let mut input_fields: Vec<String> = input.split('\t').map(String::from).collect();
+        let expected_fields: Vec<String> = expected.split('\t').map(String::from).collect();
+        
+        let (query_fixed, target_fixed) = fix_endpoints(&mut input_fields);
+        
+        assert_eq!(input_fields, expected_fields, "Fields do not match after fixing");
+        assert!(query_fixed || target_fixed, "No fixes were applied");
+    }
+
+    #[test]
+    fn test_paf_records() {
+        let test_cases = [
+            (
+                "S288C#1#chrI\t219929\t0\t44981\t+\tSGDref#1#chrI\t230218\t0\t44561\t44280\t45000\t18\tgi:f:0.993583\tbi:f:0.984\tmd:f:0.998965\tcg:Z:1=49I6754=3I5956=384I7260=2I3765=1I1603=1X147=1X8=1X8=1X2=1X2=1X2=1X20=1X5=1X17=1X23=1X26=1X11=1X29=2X1=1X1=2X1=1X15=1X8=1X5=1X2=1X14=4X17=1X2=1X8=1X11=1X2=1X5=2X2=1X7=1X1=2X2=1X5=1X3=3X2=2X1=1X2=1X12=1X3=2X11=1X2=1X8=1X1=1X9=1X2=1X4=2X2=1X2=1X2=1X5=1X2=1X8=1X6=1X1=2X9=1X9=1X3=3X2=2X1=1X2=1X12=1X3=2X14=1X8=1X1=1X9=1X2=1X4=2X2=1X8=1X11=1X2=1X5=2X2=1X7=1X1=2X2=1X9=3X2=2X1=1X2=1X12=1X3=2X14=1X8=1X1=1X9=1X2=1X4=2X2=1X5=1X5=1X2=1X8=1X7=3X23=3X2=2X1=1X2=1X5=1X6=1X1=1X1=2X7=2X14=3X12=1X5=1X2=1X8=1X11=1X2=1X5=2X2=1X7=1X1=2X2=1X5=1X3=3X2=2X1=1X2=1X12=1X3=2X11=1X14=1X17=1X5=1X1=1X3=1X2=1X2=1X5=1X2=2X5=1X1=2X9=1X4=1X4=1X3=3X2=2X1=1X2=1X16=2X11=1X14=1X41=1X2=2X5=1X1=2X9=1X9=1X3=3X2=2X1=1X2=1X16=2X11=1X14=1X41=1X2=2X5=1X1=2X9=1X9=1X3=3X2=2X1=1X2=1X16=2X11=1X2=1X11=1X5=1X35=1X2=2X6=3X23=3X2=2X1=1X2=1X12=1X3=2X21=1X7=1X13=2X2=1X4=1X3=1X2=1X2=1X5=1X2=1X5=1X1=1X1=1X7=1X2=1X2=1X29=1X3=1X3=2X7=1X15=1X2=1X8=1X2=1X4=2X2=1X5=1X8=1X5=1X20=1X2=1X17432=",
+                "S288C#1#chrI\t219929\t0\t45000\t+\tSGDref#1#chrI\t230218\t0\t44561\t44280\t45000\t18\tgi:f:0.993583\tbi:f:0.984\tmd:f:0.998965\tcg:Z:1=49I6754=3I5956=384I7260=2I3765=1I1603=1X147=1X8=1X8=1X2=1X2=1X2=1X20=1X5=1X17=1X23=1X26=1X11=1X29=2X1=1X1=2X1=1X15=1X8=1X5=1X2=1X14=4X17=1X2=1X8=1X11=1X2=1X5=2X2=1X7=1X1=2X2=1X5=1X3=3X2=2X1=1X2=1X12=1X3=2X11=1X2=1X8=1X1=1X9=1X2=1X4=2X2=1X2=1X2=1X5=1X2=1X8=1X6=1X1=2X9=1X9=1X3=3X2=2X1=1X2=1X12=1X3=2X14=1X8=1X1=1X9=1X2=1X4=2X2=1X8=1X11=1X2=1X5=2X2=1X7=1X1=2X2=1X9=3X2=2X1=1X2=1X12=1X3=2X14=1X8=1X1=1X9=1X2=1X4=2X2=1X5=1X5=1X2=1X8=1X7=3X23=3X2=2X1=1X2=1X5=1X6=1X1=1X1=2X7=2X14=3X12=1X5=1X2=1X8=1X11=1X2=1X5=2X2=1X7=1X1=2X2=1X5=1X3=3X2=2X1=1X2=1X12=1X3=2X11=1X14=1X17=1X5=1X1=1X3=1X2=1X2=1X5=1X2=2X5=1X1=2X9=1X4=1X4=1X3=3X2=2X1=1X2=1X16=2X11=1X14=1X41=1X2=2X5=1X1=2X9=1X9=1X3=3X2=2X1=1X2=1X16=2X11=1X14=1X41=1X2=2X5=1X1=2X9=1X9=1X3=3X2=2X1=1X2=1X16=2X11=1X2=1X11=1X5=1X35=1X2=2X6=3X23=3X2=2X1=1X2=1X12=1X3=2X21=1X7=1X13=2X2=1X4=1X3=1X2=1X2=1X5=1X2=1X5=1X1=1X1=1X7=1X2=1X2=1X29=1X3=1X3=2X7=1X15=1X2=1X8=1X2=1X4=2X2=1X5=1X8=1X5=1X20=1X2=1X17432="
+            ),
+            (
+                "S288C#1#chrI\t219929\t45000\t94990\t+\tSGDref#1#chrI\t230218\t44561\t94560\t49999\t50000\t47\tgi:f:0.99998\tbi:f:0.99998\tmd:f:1\tcg:Z:1089=1I48910=",
+                "S288C#1#chrI\t219929\t45000\t95000\t+\tSGDref#1#chrI\t230218\t44561\t94560\t49999\t50000\t47\tgi:f:0.99998\tbi:f:0.99998\tmd:f:1\tcg:Z:1089=1I48910="
+            ),
+            (
+                "S288C#1#chrI\t219929\t95000\t144993\t+\tSGDref#1#chrI\t230218\t94560\t144557\t49994\t50000\t39\tgi:f:0.9999\tbi:f:0.99988\tmd:f:0.999929\tcg:Z:6720=1X24=1I25590=2I14134=1X104=1X3422=",
+                "S288C#1#chrI\t219929\t95000\t145000\t+\tSGDref#1#chrI\t230218\t94560\t144557\t49994\t50000\t39\tgi:f:0.9999\tbi:f:0.99988\tmd:f:0.999929\tcg:Z:6720=1X24=1I25590=2I14134=1X104=1X3422="
+            ),
+        ];
+
+        for (input, expected) in test_cases.iter() {
+            test_fix_endpoints(input, expected);
+        }
+    }
+}
+
 fn main() -> io::Result<()> {
     let args: Vec<String> = env::args().collect();
     if args.len() != 2 {
