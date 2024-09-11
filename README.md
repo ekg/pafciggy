@@ -1,6 +1,6 @@
-# PAFCiggy
+# pafciggy
 
-PAFCiggy is a Rust-based command-line tool designed to fix and validate PAF (Pairwise Alignment Format) files, specifically focusing on correcting endpoint coordinates based on CIGAR strings.
+pafciggy is a Rust-based command-line tool designed to fix and validate PAF (Pairwise Alignment Format) files, specifically focusing on correcting endpoint coordinates based on CIGAR strings.
 
 ## Features
 
@@ -16,7 +16,7 @@ PAFCiggy is a Rust-based command-line tool designed to fix and validate PAF (Pai
 
 ## Usage
 
-To use PAFCiggy, run the following command:
+To use pafciggy, run the following command:
 
 ```
 cargo run -- <input_file or '-' for stdin>
@@ -36,7 +36,7 @@ Examples:
 
 ## Output
 
-PAFCiggy will output the corrected PAF records to stdout. Additionally, it will print statistics to stderr, including:
+pafciggy will output the corrected PAF records to stdout. Additionally, it will print statistics to stderr, including:
 
 - Number of fixed records
 - Number of query fixes
