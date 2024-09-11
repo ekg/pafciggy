@@ -42,7 +42,7 @@ mod tests {
 fn main() -> io::Result<()> {
     let args: Vec<String> = env::args().collect();
     if args.len() != 2 {
-        eprintln!("Usage: {} <input_file or '-' for stdin>", args[0]);
+        eprintln!("[pafciggy] Usage: {} <input_file or '-' for stdin>", args[0]);
         std::process::exit(1);
     }
 
@@ -82,26 +82,26 @@ fn main() -> io::Result<()> {
                 }
                 
                 if let Err(e) = writeln!(writer, "{}", fields.join("\t")) {
-                    eprintln!("Error writing line {}: {}", line_number + 1, e);
+                    eprintln!("[pafciggy] Error writing line {}: {}", line_number + 1, e);
                     error_records += 1;
                 }
             },
             Err(e) => {
-                eprintln!("Error reading line {}: {}", line_number + 1, e);
+                eprintln!("[pafciggy] Error reading line {}: {}", line_number + 1, e);
                 error_records += 1;
             }
         }
     }
 
-    eprintln!("Fixed {} records", fixed_records);
-    eprintln!("Query fixes: {}", query_fixed_count);
-    eprintln!("Target fixes: {}", target_fixed_count);
+    eprintln!("[pafciggy] Fixed {} records", fixed_records);
+    eprintln!("[pafciggy] Query fixes: {}", query_fixed_count);
+    eprintln!("[pafciggy] Target fixes: {}", target_fixed_count);
     if fixed_records > 0 {
-        eprintln!("Average query displacement: {:.2}", total_query_displacement as f64 / query_fixed_count as f64);
-        eprintln!("Average target displacement: {:.2}", total_target_displacement as f64 / target_fixed_count as f64);
+        eprintln!("[pafciggy] Average query displacement: {:.2}", total_query_displacement as f64 / query_fixed_count as f64);
+        eprintln!("[pafciggy] Average target displacement: {:.2}", total_target_displacement as f64 / target_fixed_count as f64);
     }
     if error_records > 0 {
-        eprintln!("Encountered errors in {} records", error_records);
+        eprintln!("[pafciggy] Encountered errors in {} records", error_records);
     }
     Ok(())
 }
