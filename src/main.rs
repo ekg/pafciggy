@@ -13,7 +13,8 @@ fn main() -> std::io::Result<()> {
         
         if fields.len() >= 12 {
             let query_start: usize = fields[2].parse().unwrap_or(0);
-            let cigar = fields.last().unwrap_or(&String::new());
+            let empty_string = String::new();
+            let cigar = fields.last().unwrap_or(&empty_string);
             
             if cigar.starts_with("cg:Z:") {
                 let correct_query_end = calculate_query_end(query_start, &cigar[5..]);
