@@ -55,6 +55,10 @@ fn main() -> io::Result<()> {
     let stdout = io::stdout();
     let mut writer = io::BufWriter::new(stdout.lock());
     let mut fixed_records = 0;
+    let mut query_fixed_count = 0;
+    let mut target_fixed_count = 0;
+    let mut total_query_displacement = 0;
+    let mut total_target_displacement = 0;
     let mut error_records = 0;
 
     for (line_number, line) in input.lines().enumerate() {
@@ -63,9 +67,17 @@ fn main() -> io::Result<()> {
                 let mut fields: Vec<String> = line.split('\t').map(String::from).collect();
                 
                 if fields.len() >= 12 {
-                    let (query_fixed, target_fixed) = fix_endpoints(&mut fields);
+                    let (query_fixed, target_fixed, query_displacement, target_displacement) = fix_endpoints(&mut fields);
                     if query_fixed || target_fixed {
                         fixed_records += 1;
+                        if query_fixed {
+                            query_fixed_count += 1;
+                            total_query_displacement += query_displacement;
+                        }
+                        if target_fixed {
+                            target_fixed_count += 1;
+                            total_target_displacement += target_displacement;
+                        }
                     }
                 }
                 
@@ -82,15 +94,23 @@ fn main() -> io::Result<()> {
     }
 
     eprintln!("Fixed {} records", fixed_records);
+    eprintln!("Query fixes: {}", query_fixed_count);
+    eprintln!("Target fixes: {}", target_fixed_count);
+    if fixed_records > 0 {
+        eprintln!("Average query displacement: {:.2}", total_query_displacement as f64 / query_fixed_count as f64);
+        eprintln!("Average target displacement: {:.2}", total_target_displacement as f64 / target_fixed_count as f64);
+    }
     if error_records > 0 {
         eprintln!("Encountered errors in {} records", error_records);
     }
     Ok(())
 }
 
-fn fix_endpoints(fields: &mut Vec<String>) -> (bool, bool) {
+fn fix_endpoints(fields: &mut Vec<String>) -> (bool, bool, usize, usize) {
     let mut query_fixed = false;
     let mut target_fixed = false;
+    let mut query_displacement = 0;
+    let mut target_displacement = 0;
 
     if let (Ok(query_start), Ok(query_end), Ok(target_start), Ok(target_end), Some(cigar)) = (
         fields[2].parse::<usize>(),
@@ -104,19 +124,21 @@ fn fix_endpoints(fields: &mut Vec<String>) -> (bool, bool) {
             
             let correct_query_end = query_start + query_length;
             if correct_query_end != query_end {
+                query_displacement = correct_query_end.abs_diff(query_end);
                 fields[3] = correct_query_end.to_string();
                 query_fixed = true;
             }
 
             let correct_target_end = target_start + target_length;
             if correct_target_end != target_end {
+                target_displacement = correct_target_end.abs_diff(target_end);
                 fields[8] = correct_target_end.to_string();
                 target_fixed = true;
             }
         }
     }
 
-    (query_fixed, target_fixed)
+    (query_fixed, target_fixed, query_displacement, target_displacement)
 }
 
 fn calculate_lengths(cigar: &str) -> (usize, usize) {
