@@ -37,6 +37,19 @@ mod tests {
             test_fix_endpoints(input, expected);
         }
     }
+
+    #[test]
+    fn test_nonexistent_file() {
+        use std::process::Command;
+
+        let output = Command::new("cargo")
+            .args(&["run", "--", "nonexistent_file.paf"])
+            .output()
+            .expect("Failed to execute command");
+
+        let error_message = String::from_utf8_lossy(&output.stderr);
+        assert!(error_message.contains("Error: Input file 'nonexistent_file.paf' not found"));
+    }
 }
 
 fn main() -> io::Result<()> {
@@ -49,7 +62,12 @@ fn main() -> io::Result<()> {
     let input: Box<dyn BufRead> = if args[1] == "-" {
         Box::new(BufReader::new(io::stdin()))
     } else {
-        Box::new(BufReader::new(File::open(&args[1])?))
+        let path = std::path::Path::new(&args[1]);
+        if !path.exists() {
+            eprintln!("[pafciggy] Error: Input file '{}' not found", args[1]);
+            std::process::exit(1);
+        }
+        Box::new(BufReader::new(File::open(path)?))
     };
 
     let stdout = io::stdout();
