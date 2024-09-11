@@ -18,22 +18,36 @@ fn main() -> io::Result<()> {
     let stdout = io::stdout();
     let mut writer = io::BufWriter::new(stdout.lock());
     let mut fixed_records = 0;
+    let mut error_records = 0;
 
-    for line in input.lines() {
-        let line = line?;
-        let mut fields: Vec<&str> = line.split('\t').collect();
-        
-        if fields.len() >= 12 {
-            let (query_fixed, target_fixed) = fix_endpoints(&mut fields);
-            if query_fixed || target_fixed {
-                fixed_records += 1;
+    for (line_number, line) in input.lines().enumerate() {
+        match line {
+            Ok(line) => {
+                let mut fields: Vec<&str> = line.split('\t').collect();
+                
+                if fields.len() >= 12 {
+                    let (query_fixed, target_fixed) = fix_endpoints(&mut fields);
+                    if query_fixed || target_fixed {
+                        fixed_records += 1;
+                    }
+                }
+                
+                if let Err(e) = writeln!(writer, "{}", fields.join("\t")) {
+                    eprintln!("Error writing line {}: {}", line_number + 1, e);
+                    error_records += 1;
+                }
+            },
+            Err(e) => {
+                eprintln!("Error reading line {}: {}", line_number + 1, e);
+                error_records += 1;
             }
         }
-        
-        writeln!(writer, "{}", fields.join("\t"))?;
     }
 
     eprintln!("Fixed {} records", fixed_records);
+    if error_records > 0 {
+        eprintln!("Encountered errors in {} records", error_records);
+    }
     Ok(())
 }
 
@@ -50,7 +64,7 @@ fn fix_endpoints(fields: &mut Vec<&str>) -> (bool, bool) {
         if cigar.starts_with("cg:Z:") {
             let correct_query_end = calculate_query_end(query_start, &cigar[5..]);
             if correct_query_end != query_end {
-                fields[3] = &cigar[5..correct_query_end.to_string().len() + 5];
+                fields[3] = correct_query_end.to_string().as_str();
                 query_fixed = true;
             }
         }
@@ -65,7 +79,7 @@ fn fix_endpoints(fields: &mut Vec<&str>) -> (bool, bool) {
         if cigar.starts_with("cg:Z:") {
             let correct_target_end = calculate_target_end(target_start, &cigar[5..]);
             if correct_target_end != target_end {
-                fields[8] = &cigar[5..correct_target_end.to_string().len() + 5];
+                fields[8] = correct_target_end.to_string().as_str();
                 target_fixed = true;
             }
         }
