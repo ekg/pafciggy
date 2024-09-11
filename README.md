@@ -55,12 +55,12 @@ cargo test
 
 ## License
 
-[Insert your chosen license here]
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 ## Contributing
 
-[Insert contribution guidelines here]
+Just make a PR!
 
 ## Author
 
-[Your Name or Organization]
+Erik Garrison
